@@ -4,7 +4,8 @@ class BrakeBanner{
 		this.app = new PIXI.Application({
 			width: window.innerWidth,
 			height: window.innerHeight,
-			backgroundColor: 0xffffffff,
+			backgroundColor: 0xffffffff, // 白色
+			// backgroundColor: 0x3b3d3c, // 灰色#3b3d3c
 			resizeTo: window
 		})
 		console.log('app', this.app, this.app.view)
@@ -13,7 +14,7 @@ class BrakeBanner{
 		this.stage = this.app.stage
 		// 2、加载资源
 		this.loader = new PIXI.Loader()
-		this.sourceList = ['btn.png', 'btn_circle.png', 'brake_bike.png', 'brake_handlerbar.png', 'brake_lever.png']
+		this.sourceList = ['btn.png', 'btn_circle.png', 'brake_bike.png', 'brake_handlerbar.png', 'brake_lever.png', 'highway.png']
 		// 自定义的key: btn.png, 资源：images/btn.png
 		// this.loader.add('btn.png', "images/btn.png")
 		// this.loader.add('btn_circle.png', "images/btn_circle.png")
@@ -30,19 +31,22 @@ class BrakeBanner{
 	} 
 
 	show() {
-		
+		let { highwayContainer, highway } = this.createHighway()
 		let { bikeContainer, bikeLeverImg } = this.createBike()
 		bikeContainer.scale.x = bikeContainer.scale.y = 0.3
 
 		let actionButton = this.creatActionButton()
 		actionButton.scale.x = actionButton.scale.y = 0.45
-		// actionButton.x = bikeContainer.x/2
-		// actionButton.y = bikeContainer.y/2
-		// actionButton.x = 430
-		// actionButton.y = 400
+		actionButton.x = 430
+		actionButton.y = 400
 		// actionButton.y = 440 // 父容器移动到400的位置
 		actionButton.buttonMode = true // 移动上去箭头变为手
 		actionButton.interactive = true // 可以交互
+
+		// 公路位置
+		highway.x = window.innerWidth - bikeContainer.width - 1130
+		highway.y = window.innerHeight - bikeContainer.height - 1130
+
 		actionButton.on('mousedown', () => { // 按下效果 pointerdown
 			// 把手被按下的效果：逆时针30°
 			// bikeLeverImg.rotation = Math.PI/180*-30
@@ -60,9 +64,15 @@ class BrakeBanner{
 
 		let resize = () => {
 			console.log('resize')
+			// 自行车位置
 			bikeContainer.x = window.innerWidth - bikeContainer.width
 			bikeContainer.y = window.innerHeight - bikeContainer.height
 
+			// 公路位置
+			highway.x = window.innerWidth - bikeContainer.width - 600
+			highway.y = window.innerHeight - bikeContainer.height - 600
+
+			// 按钮位置
 			actionButton.x = window.innerWidth - bikeContainer.x + 420
 			actionButton.y = window.innerHeight - bikeContainer.y - 160
 		}
@@ -74,10 +84,10 @@ class BrakeBanner{
 		this.stage.addChild(particleContainer)
 		// 轴心为中心点
 		particleContainer.pivot.x = window.innerWidth/2
-		particleContainer.pivot.y = window.innerWidth/2
+		particleContainer.pivot.y = window.innerHeight/2
 
 		particleContainer.x = window.innerWidth/2
-		particleContainer.y = window.innerWidth/2
+		particleContainer.y = window.innerHeight/2
 		// 粒子向35°旋转
 		particleContainer.rotation = 35*Math.PI/180
 		// 粒子有多个颜色
@@ -104,18 +114,28 @@ class BrakeBanner{
 		// 超出边界后回到顶部继续移动
 		let speed = 0
 		function loop() {
-			speed += .5
-			speed = Math.min(speed, 20) // 最大速度为20
+			speed += .3
+			speed = Math.min(speed, 20) // 最大速度为20, 设置加速最大值
+			// speed = Math.max(speed, 0) // 设置减速最小值
 			for(let i = 0; i<particles.length; i++) {
 				let pItem = particles[i]
 				pItem.gr.y += speed
-
+				// pItem.gr.x = 30
 				if (speed >= 20) { // 变成线, 由慢到快
 					pItem.gr.scale.y = 30
 					pItem.gr.scale.x = 0.03
 
 				}
 				if (pItem.gr.y > window.innerHeight) pItem.gr.y = 0 // 超出时回到原点
+			}
+
+			highwayContainer.y +=  Math.cos(35* Math.PI/180) * speed
+			highwayContainer.x -=  Math.sin(35* Math.PI/180) * speed
+			console.log('highwayContainer.y', highwayContainer.y, highwayContainer.x, 'ss', speed)
+			if (highwayContainer.y > 400) {
+				highwayContainer.y = -100
+				highwayContainer.x = 800
+				// highwayContainer.x = 1096
 			}
 		}
 
@@ -159,12 +179,7 @@ class BrakeBanner{
 		let actionButton = new PIXI.Container()
 		this.stage.addChild(actionButton)
 
-		// let btnImg = new PIXI.Sprite(this.loader.resources['btn.png'].texture) // resources是复数
-		// let btnCircle = new PIXI.Sprite(this.loader.resources['btn_circle.png'].texture)
-		// let btnCircle2 = new PIXI.Sprite(this.loader.resources['btn_circle.png'].texture)
-		// actionButton.addChild(btnImg)
-		// actionButton.addChild(btnCircle)
-		// actionButton.addChild(btnCircle2)
+
 		let btnImg = this.initSprite('btn.png', actionButton)
 		let btnCircle = this.initSprite('btn_circle.png', actionButton)
 		let btnCircle2 = this.initSprite('btn_circle.png', actionButton)
@@ -194,21 +209,61 @@ class BrakeBanner{
 		const bikeImg = this.initSprite('brake_bike.png', bikeContainer)
 		const bikeLeverImg = this.initSprite('brake_lever.png', bikeContainer)
 		
-		bikeImg.alpha = 0.5
+		// bikeImg.alpha = 0.5
 		// 中心点
 		bikeLeverImg.pivot.x = 455
 		bikeLeverImg.pivot.y = 455
 		
 		bikeLeverImg.x = 722
 		bikeLeverImg.y = 900
+
 		// 把手按下的效果：逆时针30°
 		// bikeLeverImg.rotation = Math.PI/180*-30
 
 		// 调整bikeLeverImg 和 bikeHandlerbarImg初始化的顺序， 从上往下执行
 		const bikeHandlerbarImg = this.initSprite('brake_handlerbar.png', bikeContainer)
+		// bikeHandlerbarImg.alpha = 0.8
+		//调色器, 自行车填颜色
+		bikeLeverImg.tint = 0x9AC0CD
+		// bikeImg.tint = 0xB4CDCD
+		bikeImg.tint = 0x9AC0CD
+		bikeHandlerbarImg.tint = 0x9AC0CD
+
+		// gsap.to(bikeImg, { repeat: -1,duration: 1, ease: "circ.inOut", inertia: true, transformOrigin:"center center" })
 		return {
 			bikeContainer,
 			bikeLeverImg
+		}
+	}
+	// 马路
+	createHighway() {
+		// 容器
+		const highwayContainer = new PIXI.Container()
+		// 轴中心
+		highwayContainer.pivot.x = window.innerWidth/2
+		highwayContainer.pivot.y = window.innerHeight/2
+		// 位置，大小
+		highwayContainer.x = window.innerWidth/2
+		highwayContainer.y = window.innerHeight/2
+
+		highwayContainer.tint = 0x000000
+		this.stage.addChild(highwayContainer)
+
+		highwayContainer.rotation = 35 * Math.PI / 180
+		// 初始化马路
+		const highway = new PIXI.Sprite(this.loader.resources['highway.png'].texture)
+		highwayContainer.addChild(highway)
+		// 缩放
+		// highway.scale.x = highway.scale.y = 1.4
+		// 中心点
+		// highway.pivot.x = highway.pivot.y = 3
+		// highway.pivot.x = window.innerWidth/2
+		// highway.pivot.y = window.innerHeight/2
+		// highway.x = window.innerWidth - 600
+		// highway.y = window.innerHeight - 600
+		return {
+			highwayContainer,
+			highway
 		}
 	}
 }
